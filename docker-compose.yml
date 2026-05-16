@@ -1,0 +1,39 @@
+services:
+  webhook:
+    build:
+      context: .
+    command: gunicorn --bind 0.0.0.0:8000 "amazon_price_check:create_app()"
+    env_file:
+      - .env
+    environment:
+      ALERTS_DB_PATH: /app/data/alerts.db
+    ports:
+      - "8000:8000"
+    volumes:
+      - alerts-data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8000/health >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  checker:
+    build:
+      context: .
+    command: /app/docker/checker.sh
+    env_file:
+      - .env
+    environment:
+      ALERTS_DB_PATH: /app/data/alerts.db
+      CHECK_INTERVAL_SECONDS: 3600
+    volumes:
+      - alerts-data:/app/data
+    restart: unless-stopped
+    depends_on:
+      webhook:
+        condition: service_healthy
+
+volumes:
+  alerts-data:

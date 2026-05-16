@@ -1,0 +1,5 @@
+.env
+alerts.db
+.codex
+.venv/
+__pycache__/
